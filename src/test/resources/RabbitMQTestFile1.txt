@@ -1,0 +1,31 @@
+package com.mudigal.one.service.impl;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
+import org.springframework.messaging.MessagingException;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mudigal.one.component.queue.ServiceOneRabbitMQBean;
+import com.mudigal.one.model.NameValueTO;
+
+@Profile("!default")
+@Service("serviceOneRabbitMessageProducer")
+public class ServiceOneRabbitMessageProducer {
+
+	private Logger logger = LoggerFactory.getLogger(ServiceOneRabbitMessageProducer.class);
+
+	@Autowired
+	private RabbitTemplate xyz;
+
+	private String tempExchange = "exchangeName-123s23445622344524";
+
+	public void sendMessageToQueue(final NameValueTO data) {
+	//ServiceOneRabbitMQBean.exchangeName
+        this.xyz.convertAndSend(tempExchange, ServiceOneRabbitMQBean.routingKeyName, new ObjectMapper().writeValueAsString(data));
+	}
+}
