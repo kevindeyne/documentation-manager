@@ -1,5 +1,7 @@
 package com.kdeyne.doc;
 
+import com.kdeyne.doc.matcher.RabbitMQInvocationMatcher;
+import com.kdeyne.doc.matcher.model.RabbitMQInvocationMatch;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import spoon.Launcher;
@@ -100,7 +102,9 @@ public class Main {
         for(CtInvocation invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
             if(RabbitMQInvocationMatcher.match(invocation)) {
                 System.out.println(ctType.getQualifiedName());
-                System.out.println("- Exchange name: " + RabbitMQInvocationMatcher.parseValue(fileMap, invocation));
+                RabbitMQInvocationMatch invocationMatch = RabbitMQInvocationMatcher.parseValue(fileMap, invocation);
+                System.out.println("- Exchange name: " + invocationMatch.getExchange());
+                System.out.println("- Routing key: " + invocationMatch.getRoutingKey());
                 System.out.println();
             }
         }
@@ -112,7 +116,7 @@ public class Main {
      * @param file File to read in
      * @return CtType logical model of the class. Usually only one class per file. But in case of inner classes, can be a list
      */
-    static List<CtType> getCtTypes(File file) {
+    public static List<CtType> getCtTypes(File file) {
         Launcher launcher = new Launcher();
         launcher.addInputResource(file.getAbsolutePath());
         launcher.buildModel();

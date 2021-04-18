@@ -1,5 +1,7 @@
-package com.kdeyne.doc;
+package com.kdeyne.doc.matcher;
 
+import com.kdeyne.doc.Main;
+import com.kdeyne.doc.matcher.model.RabbitMQInvocationMatch;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtField;
@@ -36,9 +38,11 @@ public class RabbitMQInvocationMatcher {
      * @param invocation The reference the matcher found
      * @return The resolved value of the argument found
      */
-    public static String parseValue(Map<String, File> fileMap, CtInvocation invocation) {
-        CtExpression exchangeArgument = (CtExpression) invocation.getArguments().get(0);
-        return resolveValue(fileMap, exchangeArgument);
+    public static RabbitMQInvocationMatch parseValue(Map<String, File> fileMap, CtInvocation invocation) {
+        RabbitMQInvocationMatch invocationMatch = new RabbitMQInvocationMatch();
+        invocationMatch.setExchange(resolveValue(fileMap, (CtExpression) invocation.getArguments().get(0)));
+        invocationMatch.setRoutingKey(resolveValue(fileMap, (CtExpression) invocation.getArguments().get(1)));
+        return invocationMatch;
     }
 
     /**

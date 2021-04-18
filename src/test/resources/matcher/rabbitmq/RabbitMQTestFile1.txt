@@ -26,6 +26,6 @@ public class ServiceOneRabbitMessageProducer {
 
 	public void sendMessageToQueue(final NameValueTO data) {
 	//ServiceOneRabbitMQBean.exchangeName
-        this.xyz.convertAndSend(tempExchange, ServiceOneRabbitMQBean.routingKeyName, new ObjectMapper().writeValueAsString(data));
+        this.xyz.convertAndSend(tempExchange, "#", new ObjectMapper().writeValueAsString(data));
 	}
 }

@@ -1,5 +1,6 @@
 package com.kdeyne.doc;
 
+import com.kdeyne.doc.matcher.RabbitMQInvocationMatcher;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -26,7 +27,7 @@ class RabbitMQFinderTest extends AbstractTest {
         String foundExchangeName = null;
         for (CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if (RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = RabbitMQInvocationMatcher.parseValue(fileMap, invocation);
+                foundExchangeName = RabbitMQInvocationMatcher.parseValue(fileMap, invocation).getExchange();
             }
         }
 
