@@ -23,6 +23,12 @@ public class Main {
 
     private static final Map<String, File> fileModel = new HashMap<>();
 
+    /**
+     * Loads in a repo, then tries to find a few matchers
+     * Proof of concept
+     * @param args None
+     * @throws Exception None
+     */
     public static void main(String[] args) throws Exception {
         if(CLEAN) {
             FileUtils.cleanDirectory(TEMP_DIR);
@@ -44,6 +50,13 @@ public class Main {
         }
     }
 
+    /**
+     * This runs through all files recursively in the repo and builds a hashmap of it
+     * It only contains references to what class is in what file
+     * So we can do easy dynamic lookup later in the matchers
+     * @param dir Base directory where all the classes will be
+     * @throws IOException Should generally not happen unless you have permission issues
+     */
     private static void buildGlobalFileModelForLookups(File dir) throws IOException {
         for(File file : Objects.requireNonNull(dir.listFiles())) {
             if(file.isDirectory()) {
@@ -60,6 +73,14 @@ public class Main {
         }
     }
 
+    /**
+     * Instead of using a Spoon Launcher here, we're doing it the faster way:
+     * transforming an absolute path into what we assume the qualified name is
+     * It's only for lookups so it doesn't need to be 100% accurate, it just needs to be fast
+     * This is a long-lived map
+     * @param file File to interpret the absolute path from
+     * @return Map entry with classname + file reference
+     */
     static Map<String, File> loadClassNameFromFile(File file) {
         final String fullFileName = file.getAbsolutePath();
         int startIndex = fullFileName.indexOf("src\\main") + 9; //9 = src/main
@@ -70,16 +91,27 @@ public class Main {
         return Collections.singletonMap(className, file);
     }
 
-    private static void interpretClass(Map<String, File> fullModel, CtType ctType) {
+    /**
+     * Runs the matchers on code
+     * @param fileMap Map for lookups, gets passed to all matchers in case lookup is required
+     * @param ctType logical model for the matcher to use
+     */
+    private static void interpretClass(Map<String, File> fileMap, CtType ctType) {
         for(CtInvocation invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
             if(RabbitMQInvocationMatcher.match(invocation)) {
                 System.out.println(ctType.getQualifiedName());
-                System.out.println("- Exchange name: " + RabbitMQInvocationMatcher.parseValue(fullModel, invocation));
+                System.out.println("- Exchange name: " + RabbitMQInvocationMatcher.parseValue(fileMap, invocation));
                 System.out.println();
             }
         }
     }
 
+    /**
+     * Reads the file as a Spoon CtType logical model
+     * This will allow us to easily parse through the classes
+     * @param file File to read in
+     * @return CtType logical model of the class. Usually only one class per file. But in case of inner classes, can be a list
+     */
     static List<CtType> getCtTypes(File file) {
         Launcher launcher = new Launcher();
         launcher.addInputResource(file.getAbsolutePath());
