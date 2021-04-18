@@ -6,28 +6,22 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtType;
-import spoon.reflect.declaration.CtTypeInformation;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import java.util.*;
 
 public class Main {
 
     //Github setup: GitHub github = new GitHubBuilder().withOAuthToken("my_personal_token").build()
-
     //sample: https://github.com/vmudigal/microservices-sample
 
     private static final File TEMP_DIR = new File("D:\\workspace\\temp");
     private static final String SAMPLE_REPO = "https://github.com/vmudigal/microservices-sample.git";
     private static final boolean CLEAN = false;
 
-    private static final Map<String, CtType> fullModel = new HashMap<>();
+    private static final Map<String, File> fileModel = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         if(CLEAN) {
@@ -40,38 +34,43 @@ public class Main {
                     .close();
         }
 
-        traverseFiles(TEMP_DIR);
+        buildGlobalFileModelForLookups(TEMP_DIR);
 
-        for(CtType ctType : fullModel.values()) {
-            interpretClass(fullModel, ctType);
+        for(File file : fileModel.values()) {
+            List<CtType> ctTypes = getCtTypes(file);
+            for(CtType ctType : ctTypes) {
+                interpretClass(fileModel, ctType);
+            }
         }
     }
 
-    private static void traverseFiles(File dir) throws IOException {
+    private static void buildGlobalFileModelForLookups(File dir) throws IOException {
         for(File file : Objects.requireNonNull(dir.listFiles())) {
             if(file.isDirectory()) {
-                traverseFiles(file);
+                buildGlobalFileModelForLookups(file);
             }
 
             //load full model
             if(isSupportedFile(file)) {
-                Map<String, CtType> classModel = loadClass(file);
-                if(classModel != null && !classModel.isEmpty()) {
-                    fullModel.putAll(classModel);
+                Map<String, File> classModel = loadClassNameFromFile(file);
+                if(!classModel.isEmpty()) {
+                    fileModel.putAll(classModel);
                 }
             }
         }
     }
 
-    private static Map<String, CtType> loadClass(File file) {
-        List<CtType> ctTypes = getCtTypes(file);
-        if(!ctTypes.isEmpty()) {
-            return buildLookupModel(ctTypes);
-        }
-        return null;
+    static Map<String, File> loadClassNameFromFile(File file) {
+        final String fullFileName = file.getAbsolutePath();
+        int startIndex = fullFileName.indexOf("src\\main") + 9; //9 = src/main
+        String className = fullFileName
+                .substring(startIndex, fullFileName.length() - 5) //5 = .java
+                .replaceAll("\\\\", ".");
+
+        return Collections.singletonMap(className, file);
     }
 
-    private static void interpretClass(Map<String, CtType> fullModel, CtType ctType) {
+    private static void interpretClass(Map<String, File> fullModel, CtType ctType) {
         for(CtInvocation invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
             if(RabbitMQInvocationMatcher.match(invocation)) {
                 System.out.println(ctType.getQualifiedName());
@@ -79,10 +78,6 @@ public class Main {
                 System.out.println();
             }
         }
-    }
-
-    static Map<String, CtType> buildLookupModel(List<CtType> ctTypes) {
-        return ctTypes.stream().collect(Collectors.toMap(CtTypeInformation::getQualifiedName, c -> c, (a, b) -> b));
     }
 
     static List<CtType> getCtTypes(File file) {

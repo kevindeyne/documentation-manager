@@ -1,54 +1,35 @@
 package com.kdeyne.doc;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import spoon.Launcher;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.visitor.filter.TypeFilter;
 
+import java.io.File;
 import java.util.Collections;
+import java.util.Map;
 
-
+@Execution(ExecutionMode.CONCURRENT)
 class RabbitMQFinderTest extends AbstractTest {
 
-    @Test
-    void testIsAbleToFindRabbitMQCall() {
-        CtType model = Launcher.parseClass(readFile("RabbitMQTestFile1.txt"));
+    @ParameterizedTest
+    @ValueSource(strings = {"matcher/rabbitmq/RabbitMQTestFile1.txt", "matcher/rabbitmq/RabbitMQTestFile2.txt", "matcher/rabbitmq/RabbitMQTestFile3.txt"})
+    void testIsAbleToFindRabbitMQCall(String fileName) {
+        final CtType model = Launcher.parseClass(readFile(fileName));
+        final Map<String, File> fileMap = Collections.singletonMap(model.getQualifiedName(), getFile(fileName));
+
         String foundExchangeName = null;
-        for(CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
-            if(RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = parseValue(model, invocation);
+        for (CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
+            if (RabbitMQInvocationMatcher.match(invocation)) {
+                foundExchangeName = RabbitMQInvocationMatcher.parseValue(fileMap, invocation);
             }
         }
-        Assertions.assertEquals("exchangeName-123s23445622344524", foundExchangeName);
-    }
 
-    @Test
-    void testIsAbleToFindRabbitMQCall2() {
-        CtType model = Launcher.parseClass(readFile("RabbitMQTestFile2.txt"));
-        String foundExchangeName = null;
-        for(CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
-            if(RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = parseValue(model, invocation);
-            }
-        }
         Assertions.assertEquals("exchangeName-123s23445622344524", foundExchangeName);
-    }
-
-    @Test
-    void testIsAbleToFindRabbitMQCall3() {
-        CtType model = Launcher.parseClass(readFile("RabbitMQTestFile3.txt"));
-        String foundExchangeName = null;
-        for(CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
-            if(RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = parseValue(model, invocation);
-            }
-        }
-        Assertions.assertEquals("exchangeName-123s23445622344524", foundExchangeName);
-    }
-
-    private String parseValue(CtType model, CtInvocation invocation) {
-        return RabbitMQInvocationMatcher.parseValue(Main.buildLookupModel(Collections.singletonList(model)), invocation);
     }
 }

@@ -9,6 +9,7 @@ import spoon.support.reflect.code.CtLiteralImpl;
 import spoon.support.reflect.code.CtTypeAccessImpl;
 
 import java.util.Map;
+import java.io.File;
 
 public class RabbitMQInvocationMatcher {
 
@@ -20,12 +21,12 @@ public class RabbitMQInvocationMatcher {
                 invocation.getExecutable().getSignature().toLowerCase().contains("send");
     }
 
-    public static String parseValue(Map<String, CtType> model, CtInvocation invocation) {
+    public static String parseValue(Map<String, File> model, CtInvocation invocation) {
         CtExpression exchangeArgument = (CtExpression) invocation.getArguments().get(0);
         return resolveValue(model, exchangeArgument);
     }
 
-    private static String resolveValue(Map<String, CtType> model, CtExpression exchangeArgument) {
+    private static String resolveValue(Map<String, File> model, CtExpression exchangeArgument) {
         if(exchangeArgument instanceof CtLiteralImpl) {
             return valueParse(exchangeArgument);
         } else if (exchangeArgument instanceof CtFieldReadImpl) {
@@ -44,10 +45,12 @@ public class RabbitMQInvocationMatcher {
         }
     }
 
-    private static CtType findBestMatch(Map<String, CtType> model, String foreignKey) {
-        for(String key : model.keySet()) {
-            if(key.endsWith(foreignKey)) {
-                return model.get(key);
+    private static CtType findBestMatch(Map<String, File> model, String foreignKey) {
+        for(Map.Entry<String, File> entry : model.entrySet()) {
+            if(entry.getKey().endsWith(foreignKey)) {
+                File relevantFile = entry.getValue();
+                if(relevantFile == null) return null;
+                return Main.getCtTypes(relevantFile).get(0);
             }
         }
         return null;
