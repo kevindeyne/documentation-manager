@@ -7,6 +7,9 @@ import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.visitor.filter.TypeFilter;
 
+import java.util.Arrays;
+import java.util.Collections;
+
 
 class RabbitMQFinderTest extends AbstractTest {
 
@@ -16,7 +19,7 @@ class RabbitMQFinderTest extends AbstractTest {
         String foundExchangeName = null;
         for(CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if(RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = RabbitMQInvocationMatcher.parseValue(invocation);
+                foundExchangeName = parseValue(model, invocation);
             }
         }
         Assertions.assertEquals("exchangeName-123s23445622344524", foundExchangeName);
@@ -28,7 +31,7 @@ class RabbitMQFinderTest extends AbstractTest {
         String foundExchangeName = null;
         for(CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if(RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = RabbitMQInvocationMatcher.parseValue(invocation);
+                foundExchangeName = parseValue(model, invocation);
             }
         }
         Assertions.assertEquals("exchangeName-123s23445622344524", foundExchangeName);
@@ -40,11 +43,13 @@ class RabbitMQFinderTest extends AbstractTest {
         String foundExchangeName = null;
         for(CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if(RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = RabbitMQInvocationMatcher.parseValue(invocation);
+                foundExchangeName = parseValue(model, invocation);
             }
         }
         Assertions.assertEquals("exchangeName-123s23445622344524", foundExchangeName);
     }
 
-
+    private String parseValue(CtType model, CtInvocation invocation) {
+        return RabbitMQInvocationMatcher.parseValue(Main.buildLookupModel(Collections.singletonList(model)), invocation);
+    }
 }

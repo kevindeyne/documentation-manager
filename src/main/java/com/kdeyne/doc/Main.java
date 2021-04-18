@@ -5,13 +5,14 @@ import org.eclipse.jgit.api.Git;
 import spoon.Launcher;
 import spoon.legacy.NameFilter;
 import spoon.reflect.CtModel;
+import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.*;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Main {
 
@@ -22,6 +23,8 @@ public class Main {
     private static final File TEMP_DIR = new File("D:\\workspace\\temp");
     private static final String SAMPLE_REPO = "https://github.com/vmudigal/microservices-sample.git";
     private static final boolean CLEAN = false;
+
+    private static final Map<String, CtType> fullModel = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         if(CLEAN) {
@@ -35,6 +38,10 @@ public class Main {
         }
 
         traverseFiles(TEMP_DIR);
+
+        for(CtType ctType : fullModel.values()) {
+            interpretClass(fullModel, ctType);
+        }
     }
 
     private static void traverseFiles(File dir) throws IOException {
@@ -43,25 +50,36 @@ public class Main {
                 traverseFiles(file);
             }
 
+            //load full model
             if(isSupportedFile(file)) {
-                interpretClass(file);
+                Map<String, CtType> classModel = loadClass(file);
+                if(classModel != null && !classModel.isEmpty()) {
+                    fullModel.putAll(classModel);
+                }
             }
         }
     }
 
-    private static void interpretClass(File file) {
+    private static Map<String, CtType> loadClass(File file) {
         List<CtType> ctTypes = getCtTypes(file);
         if(!ctTypes.isEmpty()) {
-            System.out.println(">>" + file.getAbsolutePath().replace(TEMP_DIR.getAbsolutePath(), ""));
-            for(CtType ctType : ctTypes) {
-                System.out.println("  - " + ctType.getQualifiedName());
+            return buildLookupModel(ctTypes);
+        }
+        return null;
+    }
 
-                List<CtNamedElement> elements = ctType.getElements(new NameFilter<>("rabbitTemplate"));
-                if(!elements.isEmpty()) {
-                    System.out.println("  - " + elements);
-                }
+    private static void interpretClass(Map<String, CtType> fullModel, CtType ctType) {
+        for(CtInvocation invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
+            if(RabbitMQInvocationMatcher.match(invocation)) {
+                System.out.println(ctType.getQualifiedName());
+                System.out.println("- Exchange name: " + RabbitMQInvocationMatcher.parseValue(fullModel, invocation));
+                System.out.println();
             }
         }
+    }
+
+    static Map<String, CtType> buildLookupModel(List<CtType> ctTypes) {
+        return ctTypes.stream().collect(Collectors.toMap(CtTypeInformation::getQualifiedName, c -> c, (a, b) -> b));
     }
 
     static List<CtType> getCtTypes(File file) {
