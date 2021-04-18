@@ -4,13 +4,11 @@ import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtType;
-import spoon.reflect.reference.CtPackageReference;
 import spoon.support.reflect.code.CtFieldReadImpl;
 import spoon.support.reflect.code.CtLiteralImpl;
 import spoon.support.reflect.code.CtTypeAccessImpl;
 
 import java.util.Map;
-import java.util.Set;
 
 public class RabbitMQInvocationMatcher {
 

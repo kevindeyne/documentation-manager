@@ -7,7 +7,6 @@ import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.visitor.filter.TypeFilter;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 

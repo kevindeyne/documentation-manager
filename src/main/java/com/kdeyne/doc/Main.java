@@ -3,15 +3,18 @@ package com.kdeyne.doc;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import spoon.Launcher;
-import spoon.legacy.NameFilter;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
-import spoon.reflect.declaration.*;
+import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.CtTypeInformation;
 import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class Main {
