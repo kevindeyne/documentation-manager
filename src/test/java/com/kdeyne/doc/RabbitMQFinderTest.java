@@ -18,16 +18,18 @@ import java.util.Map;
 @Execution(ExecutionMode.CONCURRENT)
 class RabbitMQFinderTest extends AbstractTest {
 
+    private final RabbitMQInvocationMatcher matcher = new RabbitMQInvocationMatcher();
+
     @ParameterizedTest
     @ValueSource(strings = {"matcher/rabbitmq/RabbitMQTestFile1.txt", "matcher/rabbitmq/RabbitMQTestFile2.txt", "matcher/rabbitmq/RabbitMQTestFile3.txt"})
     void testIsAbleToFindRabbitMQCall(String fileName) {
-        final CtType model = Launcher.parseClass(readFile(fileName));
+        final CtType<?> model = Launcher.parseClass(readFile(fileName));
         final Map<String, File> fileMap = Collections.singletonMap(model.getQualifiedName(), getFile(fileName));
 
         String foundExchangeName = null;
-        for (CtInvocation invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
-            if (RabbitMQInvocationMatcher.match(invocation)) {
-                foundExchangeName = RabbitMQInvocationMatcher.parseValue(fileMap, invocation).getExchange();
+        for (CtInvocation<?> invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
+            if (matcher.match(invocation)) {
+                foundExchangeName = matcher.parseValue(fileMap, invocation).getExchange();
             }
         }
 

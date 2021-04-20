@@ -1,0 +1,28 @@
+package cn.com.bmsoft.workflowInterface;
+
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+
+public class RestTemplate {
+
+    /*获取待办任务列表*/
+    public String daibanList(Long user){
+        org.springframework.web.client.RestTemplate restTemplate = new org.springframework.web.client.RestTemplate();
+        restTemplate.acceptHeaderRequestCallback(JSONArray.class);
+        String url = "http://10.194.186.222:9601/bpm-platform/runtime/tasks/?mark=page";
+        ResponseEntity<String> entity = restTemplate.getForEntity(url ,String.class);
+        String body = entity.getBody();
+        return body;
+    }
+
+}

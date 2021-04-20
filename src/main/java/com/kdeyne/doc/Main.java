@@ -1,7 +1,7 @@
 package com.kdeyne.doc;
 
-import com.kdeyne.doc.matcher.RabbitMQInvocationMatcher;
-import com.kdeyne.doc.matcher.model.RabbitMQInvocationMatch;
+import com.kdeyne.doc.matcher.InvocationMatcher;
+import com.kdeyne.doc.matcher.model.InvocationMatch;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
 import spoon.Launcher;
@@ -20,7 +20,7 @@ public class Main {
     //sample: https://github.com/vmudigal/microservices-sample
 
     private static final File TEMP_DIR = new File("D:\\workspace\\temp");
-    private static final String SAMPLE_REPO = "https://github.com/vmudigal/microservices-sample.git";
+    private static final String SAMPLE_REPO = "https://github.com/TonyChan666/operationPlatform.git";
     private static final boolean CLEAN = false;
 
     private static final Map<String, File> fileModel = new HashMap<>();
@@ -32,7 +32,7 @@ public class Main {
      * @throws Exception None
      */
     public static void main(String[] args) throws Exception {
-        if(CLEAN) {
+        if(CLEAN || FileUtils.sizeOfDirectory(TEMP_DIR) == 0) {
             FileUtils.cleanDirectory(TEMP_DIR);
 
             Git.cloneRepository()
@@ -45,8 +45,8 @@ public class Main {
         buildGlobalFileModelForLookups(TEMP_DIR);
 
         for(File file : fileModel.values()) {
-            List<CtType> ctTypes = getCtTypes(file);
-            for(CtType ctType : ctTypes) {
+            List<CtType<?>> ctTypes = getCtTypes(file);
+            for(CtType<?> ctType : ctTypes) {
                 interpretClass(fileModel, ctType);
             }
         }
@@ -88,7 +88,7 @@ public class Main {
         int startIndex = fullFileName.indexOf("src\\main") + 9; //9 = src/main
         String className = fullFileName
                 .substring(startIndex, fullFileName.length() - 5) //5 = .java
-                .replaceAll("\\\\", ".");
+                .replace("\\", ".");
 
         return Collections.singletonMap(className, file);
     }
@@ -98,14 +98,14 @@ public class Main {
      * @param fileMap Map for lookups, gets passed to all matchers in case lookup is required
      * @param ctType logical model for the matcher to use
      */
-    private static void interpretClass(Map<String, File> fileMap, CtType ctType) {
-        for(CtInvocation invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
-            if(RabbitMQInvocationMatcher.match(invocation)) {
-                System.out.println(ctType.getQualifiedName());
-                RabbitMQInvocationMatch invocationMatch = RabbitMQInvocationMatcher.parseValue(fileMap, invocation);
-                System.out.println("- Exchange name: " + invocationMatch.getExchange());
-                System.out.println("- Routing key: " + invocationMatch.getRoutingKey());
-                System.out.println();
+    private static void interpretClass(Map<String, File> fileMap, CtType<?> ctType) {
+        for(CtInvocation<?> invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
+            for(InvocationMatcher matcher : Matchers.INVOCATION_MATCHERS) {
+                if(matcher.match(invocation)) {
+                    System.out.println(ctType.getQualifiedName());
+                    InvocationMatch invocationMatch = matcher.parseValue(fileMap, invocation);
+                    invocationMatch.printResult();
+                }
             }
         }
     }
@@ -116,7 +116,7 @@ public class Main {
      * @param file File to read in
      * @return CtType logical model of the class. Usually only one class per file. But in case of inner classes, can be a list
      */
-    public static List<CtType> getCtTypes(File file) {
+    public static List<CtType<?>> getCtTypes(File file) {
         Launcher launcher = new Launcher();
         launcher.addInputResource(file.getAbsolutePath());
         launcher.buildModel();

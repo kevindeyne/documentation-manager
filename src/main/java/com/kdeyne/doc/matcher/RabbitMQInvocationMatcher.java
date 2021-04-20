@@ -3,7 +3,9 @@ package com.kdeyne.doc.matcher;
 import com.kdeyne.doc.Main;
 import com.kdeyne.doc.matcher.model.RabbitMQInvocationMatch;
 import spoon.reflect.code.CtExpression;
+import spoon.reflect.code.CtFieldRead;
 import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtTypeAccess;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtType;
 import spoon.support.reflect.code.CtFieldReadImpl;
@@ -13,9 +15,7 @@ import spoon.support.reflect.code.CtTypeAccessImpl;
 import java.util.Map;
 import java.io.File;
 
-public class RabbitMQInvocationMatcher {
-
-    private RabbitMQInvocationMatcher() {}
+public class RabbitMQInvocationMatcher implements InvocationMatcher {
 
     /**
      * Checks if this invocation in question is relevant
@@ -23,7 +23,7 @@ public class RabbitMQInvocationMatcher {
      * @param invocation The invocation
      * @return Boolean, matches or not
      */
-    public static boolean match(CtInvocation invocation) {
+    public boolean match(CtInvocation<?> invocation) {
         return invocation.getTarget() != null &&
                 invocation.getTarget().getType() != null &&
                 invocation.getExecutable() != null &&
@@ -38,10 +38,10 @@ public class RabbitMQInvocationMatcher {
      * @param invocation The reference the matcher found
      * @return The resolved value of the argument found
      */
-    public static RabbitMQInvocationMatch parseValue(Map<String, File> fileMap, CtInvocation invocation) {
+    public RabbitMQInvocationMatch parseValue(Map<String, File> fileMap, CtInvocation<?> invocation) {
         RabbitMQInvocationMatch invocationMatch = new RabbitMQInvocationMatch();
-        invocationMatch.setExchange(resolveValue(fileMap, (CtExpression) invocation.getArguments().get(0)));
-        invocationMatch.setRoutingKey(resolveValue(fileMap, (CtExpression) invocation.getArguments().get(1)));
+        invocationMatch.setExchange(resolveValue(fileMap, invocation.getArguments().get(0)));
+        invocationMatch.setRoutingKey(resolveValue(fileMap, invocation.getArguments().get(1)));
         return invocationMatch;
     }
 
@@ -52,19 +52,19 @@ public class RabbitMQInvocationMatcher {
      * @param exchangeArgument The argument found
      * @return String value
      */
-    private static String resolveValue(Map<String, File> fileMap, CtExpression exchangeArgument) {
+    private String resolveValue(Map<String, File> fileMap, CtExpression<?> exchangeArgument) {
         if(exchangeArgument instanceof CtLiteralImpl) {
             return valueParse(exchangeArgument);
         } else if (exchangeArgument instanceof CtFieldReadImpl) {
-            CtFieldReadImpl arg = (CtFieldReadImpl) exchangeArgument;
+            CtFieldRead<?> arg = (CtFieldReadImpl<?>) exchangeArgument;
             return valueParse(arg.getVariable().getFieldDeclaration().getDefaultExpression());
         } else if (exchangeArgument instanceof CtTypeAccessImpl) {
-            CtTypeAccessImpl arg = (CtTypeAccessImpl) exchangeArgument;
+            CtTypeAccess<?> arg = (CtTypeAccessImpl<?>) exchangeArgument;
             final String foreignKey = arg.getAccessedType().getPackage().getQualifiedName();
-            final CtType foreignModel = findBestMatch(fileMap, foreignKey);
+            final CtType<?> foreignModel = findBestMatch(fileMap, foreignKey);
             if(foreignModel == null) throw new IllegalArgumentException();
 
-            final CtField foreignField = foreignModel.getField(arg.getAccessedType().getSimpleName());
+            final CtField<?> foreignField = foreignModel.getField(arg.getAccessedType().getSimpleName());
             return valueParse(foreignField.getDefaultExpression());
         } else {
             throw new IllegalArgumentException();
@@ -80,7 +80,7 @@ public class RabbitMQInvocationMatcher {
      * @param foreignKey the name of the referencing class we're looking up
      * @return a CtType of the corresponding file
      */
-    private static CtType findBestMatch(Map<String, File> fileMap, String foreignKey) {
+    private CtType<?> findBestMatch(Map<String, File> fileMap, String foreignKey) {
         for(Map.Entry<String, File> entry : fileMap.entrySet()) {
             if(entry.getKey().endsWith(foreignKey)) {
                 File relevantFile = entry.getValue();
@@ -89,14 +89,5 @@ public class RabbitMQInvocationMatcher {
             }
         }
         return null;
-    }
-
-    /**
-     * Loaded objects are loaded as double quoted, so we remove them
-     * @param obj Object ready to toString and remove double quotes
-     * @return The final clean value
-     */
-    private static String valueParse(Object obj) {
-        return obj.toString().replace("\"", "");
     }
 }
