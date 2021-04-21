@@ -3,8 +3,13 @@ package com.kdeyne.doc.matcher;
 import com.kdeyne.doc.matcher.model.InvocationMatch;
 import spoon.reflect.code.CtInvocation;
 
+import javax.script.ScriptEngineManager;
+import javax.script.ScriptException;
 import java.io.File;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public interface InvocationMatcher {
@@ -13,32 +18,35 @@ public interface InvocationMatcher {
 
     InvocationMatch parseValue(Map<String, File> fileMap, CtInvocation<?> invocation);
 
+    Pattern PATTERN = Pattern.compile("\\w+");
+
     /**
      * Loaded objects are loaded as double quoted, so we remove them
      * @param obj Object ready to toString and remove double quotes
      * @return The final clean value
      */
-    //TODO this is messy ... we should somehow have to evaluate the expression before we try parsing it OR we just cut everything that's not clear
     default String valueParse(Object obj) {
-        final String simpleParse = obj.toString().replace("\"", "");
-        if(simpleParse.contains("(") && simpleParse.contains(")")) {
+        try {
+            final String expression = obj.toString();
+
             StringBuilder builder = new StringBuilder();
-            final String[] split = simpleParse.split("[(|)]");
-            for(String part : split) {
-                if(!part.isEmpty()) {
-                    if(part.startsWith(" + &")) {
-                        builder.append(part.replaceAll(Pattern.quote(" + "), ""));
-                    } else if(part.contains(" + ")) {
-                        builder.append(part.replaceAll(Pattern.quote(" + "), "{"));
-                        builder.append("}");
-                    } else {
-                        builder.append(part);
-                    }
+            Set<String> variables = new HashSet<>();
+            Matcher m = PATTERN.matcher(expression);
+            while(m.find()) {
+                final String group = m.group();
+                if(Character.isLetter(group.charAt(0))) {
+                    variables.add(group);
                 }
             }
-            return builder.toString();
-        } else {
-            return simpleParse;
+
+            for(String variable : variables) {
+                builder.append("var " + variable + " = '{" + variable + "}'; ");
+            }
+
+            builder.append(expression);
+            return new ScriptEngineManager().getEngineByName("JavaScript").eval(builder.toString()).toString();
+        } catch (ScriptException e) {
+            throw new RuntimeException(e);
         }
     }
 }
