@@ -1,10 +1,10 @@
 package com.kdeyne.doc.matcher;
 
 import com.kdeyne.doc.matcher.model.InvocationMatch;
+import org.codehaus.commons.compiler.CompilerFactoryFactory;
+import org.codehaus.commons.compiler.IExpressionEvaluator;
 import spoon.reflect.code.CtInvocation;
 
-import javax.script.ScriptEngineManager;
-import javax.script.ScriptException;
 import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
@@ -26,26 +26,35 @@ public interface InvocationMatcher {
      * @return The final clean value
      */
     default String valueParse(Object obj) {
-        try {
-            final String expression = obj.toString();
+        final String expression = obj.toString();
 
-            StringBuilder builder = new StringBuilder();
-            Set<String> variables = new HashSet<>();
-            Matcher m = PATTERN.matcher(expression);
-            while(m.find()) {
-                final String group = m.group();
-                if(Character.isLetter(group.charAt(0))) {
-                    variables.add(group);
-                }
+        Set<String> variables = new HashSet<>();
+        Matcher m = PATTERN.matcher(expression);
+        while(m.find()) {
+            final String group = m.group();
+            if(Character.isLetter(group.charAt(0))) {
+                variables.add(group);
+            }
+        }
+
+        return evalCode(expression, variables.toArray(new String[0]));
+    }
+
+    default String evalCode(String originalString, String ... params) {
+        try{
+            Object[] values = new String[params.length];
+            Class<?>[] classes = new Class[params.length];
+            for (int i = 0; i < params.length; i++) {
+                values[i] = "{" + params[i] + "}";
+                classes[i] = String.class;
             }
 
-            for(String variable : variables) {
-                builder.append("var " + variable + " = '{" + variable + "}'; ");
-            }
-
-            builder.append(expression);
-            return new ScriptEngineManager().getEngineByName("JavaScript").eval(builder.toString()).toString();
-        } catch (ScriptException e) {
+            IExpressionEvaluator ee = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+            ee.setExpressionType(String.class);
+            ee.setParameters(params, classes);
+            ee.cook(originalString);
+            return ee.evaluate(values).toString();
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
