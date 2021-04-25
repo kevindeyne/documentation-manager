@@ -1,5 +1,6 @@
 package com.kdeyne.doc;
 
+import com.kdeyne.doc.loader.PropertiesLoader;
 import com.kdeyne.doc.matcher.InvocationMatcher;
 import com.kdeyne.doc.matcher.model.InvocationMatch;
 import org.apache.commons.io.FileUtils;
@@ -23,7 +24,10 @@ public class Main {
     private static final String SAMPLE_REPO = "https://github.com/TonyChan666/operationPlatform.git";
     private static final boolean CLEAN = false;
 
+    private static final PropertiesLoader PROPERTIES_LOADER = new PropertiesLoader();
+
     private static final Map<String, File> fileModel = new HashMap<>();
+    private static final Map<String, String> propertiesModel = new HashMap<>();
 
     /**
      * Loads in a repo, then tries to find a few matchers
@@ -47,7 +51,7 @@ public class Main {
         for(File file : fileModel.values()) {
             List<CtType<?>> ctTypes = getCtTypes(file);
             for(CtType<?> ctType : ctTypes) {
-                interpretClass(fileModel, ctType);
+                interpretClass(fileModel, propertiesModel, ctType);
             }
         }
     }
@@ -66,11 +70,15 @@ public class Main {
             }
 
             //load full model
-            if(isSupportedFile(file)) {
+            if(isSupportedJavaFile(file)) {
                 Map<String, File> classModel = loadClassNameFromFile(file);
                 if(!classModel.isEmpty()) {
                     fileModel.putAll(classModel);
                 }
+            } else if (isSupportedPropertiesYMLFile(file)) {
+                propertiesModel.putAll(PROPERTIES_LOADER.parseYML(file));
+            } else if (isSupportedPropertiesPropertiesFile(file)) {
+                propertiesModel.putAll(PROPERTIES_LOADER.parseProperties(file));
             }
         }
     }
@@ -98,12 +106,12 @@ public class Main {
      * @param fileMap Map for lookups, gets passed to all matchers in case lookup is required
      * @param ctType logical model for the matcher to use
      */
-    private static void interpretClass(Map<String, File> fileMap, CtType<?> ctType) {
+    private static void interpretClass(Map<String, File> fileMap, Map<String, String> propertiesModel, CtType<?> ctType) {
         for(CtInvocation<?> invocation : ctType.getElements(new TypeFilter<>(CtInvocation.class))) {
             for(InvocationMatcher matcher : Matchers.INVOCATION_MATCHERS) {
                 if(matcher.match(invocation)) {
                     System.out.println(ctType.getQualifiedName());
-                    InvocationMatch invocationMatch = matcher.parseValue(fileMap, invocation);
+                    InvocationMatch invocationMatch = matcher.parseValue(fileMap, propertiesModel, invocation);
                     invocationMatch.printResult();
                 }
             }
@@ -124,8 +132,15 @@ public class Main {
         return model.getElements(new TypeFilter<>(CtType.class));
     }
 
-    static boolean isSupportedFile(File file) {
+    static boolean isSupportedJavaFile(File file) {
         return file.getName().endsWith(".java");
     }
 
+    static boolean isSupportedPropertiesYMLFile(File file) {
+        return file.getName().endsWith(".yml");
+    }
+
+    static boolean isSupportedPropertiesPropertiesFile(File file) {
+        return file.getName().endsWith(".properties");
+    }
 }

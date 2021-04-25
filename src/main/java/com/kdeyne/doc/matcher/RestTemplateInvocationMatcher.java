@@ -32,11 +32,16 @@ public class RestTemplateInvocationMatcher implements InvocationMatcher {
      * @param invocation The reference the matcher found
      * @return The resolved value of the argument found
      */
-    public RestTemplateInvocationMatch parseValue(Map<String, File> fileMap, CtInvocation<?> invocation) {
+    public RestTemplateInvocationMatch parseValue(Map<String, File> fileMap, Map<String, String> propertiesMap, CtInvocation<?> invocation) {
         RestTemplateInvocationMatch invocationMatch = new RestTemplateInvocationMatch();
 
         CtVariableRead<?> uriVariable = (CtVariableRead<?>)invocation.getArguments().get(0);
-        String url = valueParse(uriVariable.getVariable().getDeclaration().getDefaultExpression());
+        String url = null;
+        if(uriVariable.getVariable().getDeclaration().getAnnotations().isEmpty()) {
+            url = valueParse(uriVariable.getVariable().getDeclaration().getDefaultExpression());
+        } else {
+            url = valueAnnotationParse(propertiesMap, uriVariable);
+        }
         invocationMatch.setUrl(url);
         invocationMatch.setHttpMethod(findMatchingHttpMethod(invocation));
         return invocationMatch;

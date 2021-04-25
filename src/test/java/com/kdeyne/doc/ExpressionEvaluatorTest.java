@@ -17,6 +17,20 @@ class ExpressionEvaluatorTest {
         ));
     }
 
+    @Test
+    void testInclImports() throws Exception {
+        Class[] classes = new Class[] { String.class };
+
+        IExpressionEvaluator ee = CompilerFactoryFactory.getDefaultCompilerFactory().newExpressionEvaluator();
+        ee.setExpressionType(String.class);
+        ee.setParameters(new String[]{"params"}, classes);
+        ee.cook("new java.lang.Integer(0) + new java.lang.String(\"originalString\")");
+        //ee.cook("((\"http://10.194.186.222:9601/bpm-platform/models/?mark=page&page=\" + java.lang.Integer.valueOf(params.get(\"page\").toString())) + \"&size=\") + java.lang.Integer.valueOf(params.get(\"size\").toString())");
+
+        String result = ee.evaluate("params").toString();
+        System.out.println(result);
+    }
+
     String evalMe(String originalString, String ... params) throws Exception {
         String[] values = new String[params.length];
         Class[] classes = new Class[params.length];

@@ -1,0 +1,20 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: searcher-weather
+  datasource:
+    hikari:
+      connectionTimeout: 20000
+      idleTimeout: 60000
+      maximumPoolSize: 30
+      minimumIdle: 10
+      poolName: SearcherWeatherDatabasePool
+    password: 2Nre1DgD17xcxUeTnmBI
+    url: jdbc:mysql://database-1.cywlnq0d4wwf.us-east-2.rds.amazonaws.com:3306/mydb
+    username: admin
+  jpa:
+    hibernate:
+      use-new-id-generator-mappings: false
+  liquibase:
+    enabled: true

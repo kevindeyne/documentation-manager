@@ -15,6 +15,7 @@ import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @Execution(ExecutionMode.CONCURRENT)
@@ -31,7 +32,7 @@ class RestTemplateFinderTest extends AbstractTest {
         RestTemplateInvocationMatch foundRestTemplateInvocationMatch = null;
         for (CtInvocation<?> invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if (matcher.match(invocation)) {
-                foundRestTemplateInvocationMatch = matcher.parseValue(fileMap, invocation);
+                foundRestTemplateInvocationMatch = matcher.parseValue(fileMap, new HashMap<>(), invocation);
                 break;
             }
         }
@@ -50,7 +51,7 @@ class RestTemplateFinderTest extends AbstractTest {
         RestTemplateInvocationMatch foundRestTemplateInvocationMatch = null;
         for (CtInvocation<?> invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if (matcher.match(invocation)) {
-                foundRestTemplateInvocationMatch = matcher.parseValue(fileMap, invocation);
+                foundRestTemplateInvocationMatch = matcher.parseValue(fileMap, new HashMap<>(), invocation);
                 break;
             }
         }

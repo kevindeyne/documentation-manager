@@ -3,9 +3,15 @@ package com.kdeyne.doc.matcher;
 import com.kdeyne.doc.matcher.model.InvocationMatch;
 import org.codehaus.commons.compiler.CompilerFactoryFactory;
 import org.codehaus.commons.compiler.IExpressionEvaluator;
+import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtVariableRead;
+import spoon.reflect.declaration.CtAnnotation;
+import spoon.reflect.visitor.CtVisitor;
+import spoon.support.reflect.code.CtExpressionImpl;
 
 import java.io.File;
+import java.lang.annotation.Annotation;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -16,7 +22,7 @@ public interface InvocationMatcher {
 
     boolean match(CtInvocation<?> invocation);
 
-    InvocationMatch parseValue(Map<String, File> fileMap, CtInvocation<?> invocation);
+    InvocationMatch parseValue(Map<String, File> fileMap, Map<String, String> propertiesMap, CtInvocation<?> invocation);
 
     Pattern PATTERN = Pattern.compile("\\w+");
 
@@ -55,7 +61,28 @@ public interface InvocationMatcher {
             ee.cook(originalString);
             return ee.evaluate(values).toString();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            return originalString;
+        }
+    }
+
+    default String valueAnnotationParse(Map<String, String> propertiesMap, CtVariableRead<?> arg) {
+        CtAnnotation<? extends Annotation> annotation = arg.getVariable().getDeclaration().getAnnotations().get(0);
+        CtExpression<?> literal = annotation.getValues().values().stream().findFirst().orElse(new CtExpressionImpl() {
+            @Override
+            public void accept(CtVisitor visitor) {
+
+            }
+        });
+
+        final String literalString = literal.toString();
+        if(literalString.contains("{")) {
+            String propertyKey = literalString.substring(literalString.indexOf("{")+1, literalString.indexOf("}"));
+            if(propertyKey.contains(":")) {
+                propertyKey = propertyKey.substring(0, propertyKey.indexOf(':'));
+            }
+            return propertiesMap.getOrDefault(propertyKey, propertyKey);
+        } else {
+            return valueParse(literal);
         }
     }
 }

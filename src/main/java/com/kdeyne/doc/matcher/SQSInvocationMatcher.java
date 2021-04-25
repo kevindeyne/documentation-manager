@@ -32,23 +32,28 @@ public class SQSInvocationMatcher implements InvocationMatcher {
      * @param invocation The reference the matcher found
      * @return The resolved value of the argument found
      */
-    public SQSInvocationMatch parseValue(Map<String, File> fileMap, CtInvocation<?> invocation) {
+    public SQSInvocationMatch parseValue(Map<String, File> fileMap, Map<String, String> propertiesMap, CtInvocation<?> invocation) {
         SQSInvocationMatch invocationMatch = new SQSInvocationMatch();
-        invocationMatch.setQueue(resolveValue(invocation.getArguments().get(0)));
+        invocationMatch.setQueue(resolveValue(invocation.getArguments().get(0), propertiesMap));
         return invocationMatch;
     }
 
     /**
      * Found the argument, but this could be a literal value, a reference to a variable, a reference to a variable in another class, or a property
      * This tries to figure that out based on what kind of class the argument is
-     * @param fileMap Used for lookups in other classes
      * @param exchangeArgument The argument found
      * @return String value
      */
-    private String resolveValue(CtExpression<?> exchangeArgument) {
+    private String resolveValue(CtExpression<?> exchangeArgument, Map<String, String> propertiesMap) {
         if (exchangeArgument instanceof CtFieldReadImpl) {
             CtFieldRead<?> arg = (CtFieldReadImpl<?>) exchangeArgument;
-            final String url = valueParse(arg.getVariable().getFieldDeclaration().getDefaultExpression());
+
+            String url = null;
+            if(arg.getVariable().getFieldDeclaration().getAnnotations().isEmpty()) {
+                url = valueParse(arg.getVariable().getFieldDeclaration().getDefaultExpression());
+            } else {
+                url = valueAnnotationParse(propertiesMap, arg);
+            }
             return url.substring(url.lastIndexOf('/')+1);
         } else {
             throw new IllegalArgumentException();

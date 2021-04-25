@@ -12,8 +12,8 @@ import spoon.support.reflect.code.CtFieldReadImpl;
 import spoon.support.reflect.code.CtLiteralImpl;
 import spoon.support.reflect.code.CtTypeAccessImpl;
 
-import java.util.Map;
 import java.io.File;
+import java.util.Map;
 
 public class RabbitMQInvocationMatcher implements InvocationMatcher {
 
@@ -38,10 +38,10 @@ public class RabbitMQInvocationMatcher implements InvocationMatcher {
      * @param invocation The reference the matcher found
      * @return The resolved value of the argument found
      */
-    public RabbitMQInvocationMatch parseValue(Map<String, File> fileMap, CtInvocation<?> invocation) {
+    public RabbitMQInvocationMatch parseValue(Map<String, File> fileMap, Map<String, String> propertiesMap, CtInvocation<?> invocation) {
         RabbitMQInvocationMatch invocationMatch = new RabbitMQInvocationMatch();
-        invocationMatch.setExchange(resolveValue(fileMap, invocation.getArguments().get(0)));
-        invocationMatch.setRoutingKey(resolveValue(fileMap, invocation.getArguments().get(1)));
+        invocationMatch.setExchange(resolveValue(fileMap, propertiesMap, invocation.getArguments().get(0)));
+        invocationMatch.setRoutingKey(resolveValue(fileMap, propertiesMap, invocation.getArguments().get(1)));
         return invocationMatch;
     }
 
@@ -52,12 +52,16 @@ public class RabbitMQInvocationMatcher implements InvocationMatcher {
      * @param exchangeArgument The argument found
      * @return String value
      */
-    private String resolveValue(Map<String, File> fileMap, CtExpression<?> exchangeArgument) {
+    private String resolveValue(Map<String, File> fileMap, Map<String, String> propertiesMap,  CtExpression<?> exchangeArgument) {
         if(exchangeArgument instanceof CtLiteralImpl) {
             return valueParse(exchangeArgument);
         } else if (exchangeArgument instanceof CtFieldReadImpl) {
             CtFieldRead<?> arg = (CtFieldReadImpl<?>) exchangeArgument;
-            return valueParse(arg.getVariable().getFieldDeclaration().getDefaultExpression());
+            if(arg.getVariable().getFieldDeclaration().getAnnotations().isEmpty()) {
+                return valueParse(arg.getVariable().getFieldDeclaration().getDefaultExpression());
+            } else {
+                return valueAnnotationParse(propertiesMap, arg);
+            }
         } else if (exchangeArgument instanceof CtTypeAccessImpl) {
             CtTypeAccess<?> arg = (CtTypeAccessImpl<?>) exchangeArgument;
             final String foreignKey = arg.getAccessedType().getPackage().getQualifiedName();

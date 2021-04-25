@@ -14,6 +14,7 @@ import spoon.reflect.visitor.filter.TypeFilter;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 //https://github.com/bogdantanase92/searcher-weather/tree/ef4383ec64664f973ff1bdfb43af6c045c62b0e7
@@ -31,7 +32,7 @@ class SQSFinderTest extends AbstractTest {
         SQSInvocationMatch sqsInvocationMatch = null;
         for (CtInvocation<?> invocation : model.getElements(new TypeFilter<>(CtInvocation.class))) {
             if (matcher.match(invocation)) {
-                sqsInvocationMatch = matcher.parseValue(fileMap, invocation);
+                sqsInvocationMatch = matcher.parseValue(fileMap, new HashMap<>(), invocation);
                 break;
             }
         }
